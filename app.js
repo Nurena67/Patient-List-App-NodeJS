@@ -1,55 +1,67 @@
-const fs = require('fs');
 const readline = require('readline');
+const {
+  initializeData,
+  showPatients,
+  addPatient,
+  editPatient,
+  deletePatient,
+} = require('./patients');
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-const dirPath = './data';
-const dataPath = 'data/patients.json';
-
-//membuat folder data pasien jika belum ada
-if(!fs.existsSync(dirPath)) {
-  fs.mkdirSync(dirPath);
-}
-
-//membuat file patients.json jika belum ada
-if(!fs.existsSync(dataPath)) {
-  fs.writeFileSync(dataPath, '[]', 'utf-8');
-}
-
-const showPatient = () => {
-  const fileBuffer = fs.readFileSync('data/patients.json', 'utf-8');
-  const patients = JSON.parse(fileBuffer);
-
-  console.log("\n--- Daftar Pasien ---");
-  if (patients.length === 0) {
-    console.log("Tidak ada data pasien.");
-  } else {
-    console.log(patients);
-  }
+const askQuestion = (query) => {
+  return new Promise((resolve) => rl.question(query, resolve));
 };
 
-const addPatient = () => {
-rl.question('Masukkan Nama Pasien : ', (nama) => {
-  rl.question('Masukkan Umur : ', (umur) => {
-    rl.question('Masukkan Keluhan : ', (keluhan) => {
-      
-      const patient = { nama, umur, keluhan };
-      const fileBuffer = fs.readFileSync('data/patients.json', 'utf-8');
-      const patients = JSON.parse(fileBuffer);
+// Menu utama
+const mainMenu = async () => {
+  console.log("\n=== Patients App Menu ===");
+  console.log("1. Tambah Pasien");
+  console.log("2. Tampilkan Semua Pasien");
+  console.log("3. Edit Pasien");
+  console.log("4. Hapus Pasien");
+  console.log("5. Keluar");
 
-      patients.push(patient);
-      fs.writeFileSync(dataPath, JSON.stringify(patients, null, 2));
-      
-      console.log(`Data Pasien ${nama} berhasil di simpan.`);
-
-      showPatient();
+  const choice = await askQuestion('\nPilih menu (1-5): ');
+  switch (choice) {
+    case '1': {
+      const nama = await askQuestion('Masukkan Nama Pasien: ');
+      const umur = await askQuestion('Masukkan Umur: ');
+      const keluhan = await askQuestion('Masukkan Keluhan: ');
+      addPatient(nama, umur, keluhan);
+      break;
+    }
+    case '2':
+      showPatients();
+      break;
+    case '3': {
+      showPatients();
+      const index = parseInt(await askQuestion('\nPilih nomor pasien yang ingin diedit: ')) - 1;
+      const nama = await askQuestion('Masukkan Nama Baru: ');
+      const umur = await askQuestion('Masukkan Umur Baru: ');
+      const keluhan = await askQuestion('Masukkan Keluhan Baru: ');
+      editPatient(index, nama, umur, keluhan);
+      break;
+    }
+    case '4': {
+      showPatients();
+      const index = parseInt(await askQuestion('\nPilih nomor pasien yang ingin dihapus: ')) - 1;
+      deletePatient(index);
+      break;
+    }
+    case '5':
+      console.log('Terima kasih telah menggunakan aplikasi ini!');
       rl.close();
-    });
-  });
-});
+      return;
+    default:
+      console.log('Pilihan tidak valid.');
+  }
+  mainMenu(); // Tampilkan menu lagi setelah selesai
 };
 
-addPatient();
+// Inisialisasi dan jalankan aplikasi
+initializeData();
+mainMenu();
